@@ -1,5 +1,5 @@
 // Task utility functions
-import type { Task, TaskPriority, TaskStatus } from '@/types/task';
+import type { Task, TaskPriority, TaskProgress, TaskStatus } from '@/types/task';
 
 export function getUrgencyColor(urgency: number): string {
   if (urgency >= 15) return 'text-error-600';
@@ -145,12 +145,7 @@ export function groupTasksByProject(tasks: Task[]): Record<string, Task[]> {
   }, {} as Record<string, Task[]>);
 }
 
-export function getTaskProgress(tasks: Task[]): {
-  total: number;
-  completed: number;
-  pending: number;
-  percentage: number;
-} {
+export function getTaskProgress(tasks: Task[]): TaskProgress {
   const total = tasks.length;
   const completed = tasks.filter(t => t.status === 'completed').length;
   const pending = tasks.filter(t => t.status === 'pending').length;

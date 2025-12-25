@@ -114,3 +114,10 @@ export interface TagsResponse extends ApiResponse {
 export interface SummaryResponse extends ApiResponse {
   summary: TaskSummary;
 }
+
+export interface TaskProgress {
+  total: number;
+  completed: number;
+  pending: number;
+  percentage: number;
+}
