@@ -13,7 +13,7 @@ import { sortTasks, filterTasks, getTaskProgress } from '@/utils/task';
 import TaskCard from './TaskCard';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
-import { FilterBar } from './FilterBar/FilterBar';
+import { FilterBar } from './FilterBar';
 
 const TaskList: React.FC = () => {
   const {
