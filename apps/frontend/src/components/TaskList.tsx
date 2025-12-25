@@ -5,7 +5,7 @@ import {
   Trash2,
   Play,
   SquareIcon,
-  Plus
+  Plus,
 } from 'lucide-react';
 import type { Task, TaskPriority } from '@/types/task';
 import { useTaskStore } from '@/stores/taskStore';
@@ -13,10 +13,12 @@ import { sortTasks, filterTasks, getTaskProgress } from '@/utils/task';
 import TaskCard from './TaskCard';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
+import { FilterBar } from './FilterBar/FilterBar';
 
 const TaskList: React.FC = () => {
   const {
     tasks,
+    projects,
     selectedTasks,
     currentFilter,
     isLoading,
@@ -125,6 +127,8 @@ const TaskList: React.FC = () => {
           Add Task
         </Button>
       </div>
+
+      <FilterBar projects={projects} />
 
       {/* Batch Actions */}
       {hasSelection && (

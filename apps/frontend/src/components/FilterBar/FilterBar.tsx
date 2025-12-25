@@ -6,25 +6,85 @@ import { useSearchParams } from 'react-router-dom';
 import { TaskStatus } from '@/types/task';
 import { useTaskStore } from '@/stores/taskStore';
 
-const [searchParams] = useSearchParams();
-const urlSearch = searchParams.get('search');
+// Utility functions for options
+const statusOptions = [
+  { value: 'all', label: 'All Status' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'waiting', label: 'Waiting' },
+  { value: 'deleted', label: 'Deleted' },
+];
 
-const {
-  currentFilter,
-  projects,
-  setFilter,
-} = useTaskStore();
+const sortOptions = [
+  { value: 'urgency', label: 'Sort by Urgency' },
+  { value: 'due', label: 'Sort by Due Date' },
+  { value: 'created', label: 'Sort by Created' },
+  { value: 'modified', label: 'Sort by Modified' },
+];
 
-// Update search term when URL params change
-useEffect(() => {
-  if (urlSearch !== null) {
-    setFilter({ search: urlSearch });
-  }
-}, [urlSearch]);
+const priorityOptions = [
+  { value: 'all', label: 'All Priorities' },
+  { value: 'H', label: 'High Priority' },
+  { value: 'M', label: 'Medium Priority' },
+  { value: 'L', label: 'Low Priority' },
+  { value: 'none', label: 'No Priority' },
+];
 
-const { sortBy, search } = currentFilter;
+// Custom hook for search param handling
+const useSearchParamSync = (setFilter: Function) => {
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('search');
 
-export const FilterBar = () => {
+  useEffect(() => {
+    if (urlSearch !== null) {
+      setFilter({ search: urlSearch });
+    }
+  }, [urlSearch, setFilter]);
+};
+
+// Custom button component for resetting filters
+const ResetFiltersButton = ({ setFilter }: { setFilter: Function }) => (
+  <button
+    onClick={() => {
+      setFilter({ status: 'all', project: 'all', priority: 'all', search: '' });
+    }}
+    className="text-sm text-secondary-500 hover:text-secondary-700"
+  >
+    Clear Filters
+  </button>
+);
+
+// Reusable Select component
+interface SelectProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: { value: string, label: string }[];
+}
+
+const CustomSelect = ({ value, onChange, options }: SelectProps) => (
+  <Select value={value} onChange={onChange}>
+    {options.map((option) => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </Select>
+);
+
+interface FilterBarProps {
+  projects: string[];
+}
+
+export const FilterBar = ({ projects }: FilterBarProps) => {
+  const {
+    currentFilter,
+    setFilter,
+  } = useTaskStore();
+
+  useSearchParamSync(setFilter);  // Sync search params
+
+  const { sortBy, search, project, status, priority } = currentFilter;
+
   return (
     <div className="bg-white p-4 rounded-lg border space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -39,30 +99,24 @@ export const FilterBar = () => {
         </div>
 
         {/* Status Filter */}
-        <Select
-          value={currentFilter.status}
+        <CustomSelect
+          value={status}
           onChange={(e) => setFilter({ status: e.target.value as TaskStatus | 'all' })}
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
-          <option value="waiting">Waiting</option>
-          <option value="deleted">Deleted</option>
-        </Select>
+          options={statusOptions}
+        />
 
         {/* Sort */}
-        <Select value={sortBy} onChange={(e) => setFilter({ sortBy: e.target.value as typeof sortBy })}>
-          <option value="urgency">Sort by Urgency</option>
-          <option value="due">Sort by Due Date</option>
-          <option value="created">Sort by Created</option>
-          <option value="modified">Sort by Modified</option>
-        </Select>
+        <CustomSelect
+          value={sortBy}
+          onChange={(e) => setFilter({ sortBy: e.target.value as typeof sortBy })}
+          options={sortOptions}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Project Filter */}
         <Select
-          value={currentFilter.project}
+          value={project}
           onChange={(e) => setFilter({ project: e.target.value })}
         >
           <option value="all">All Projects</option>
@@ -74,30 +128,18 @@ export const FilterBar = () => {
         </Select>
 
         {/* Priority Filter */}
-        <Select
-          value={currentFilter.priority}
+        <CustomSelect
+          value={priority}
           onChange={(e) => setFilter({
             priority: e.target.value as 'H' | 'M' | 'L' | 'none' | 'all'
           })}
-        >
-          <option value="all">All Priorities</option>
-          <option value="H">High Priority</option>
-          <option value="M">Medium Priority</option>
-          <option value="L">Low Priority</option>
-          <option value="none">No Priority</option>
-        </Select>
+          options={priorityOptions}
+        />
 
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => {
-              setFilter({ status: 'all', project: 'all', priority: 'all', search: '' });
-            }}
-            className="text-sm text-secondary-500 hover:text-secondary-700"
-          >
-            Clear Filters
-          </button>
+          <ResetFiltersButton setFilter={setFilter} />
         </div>
       </div>
-    </div >
+    </div>
   );
 };
