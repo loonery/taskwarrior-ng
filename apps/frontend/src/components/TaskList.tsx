@@ -1,41 +1,29 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { clsx } from 'clsx';
-import { 
-  CheckSquare, 
-  Square, 
-  Trash2, 
-  Play, 
+import {
+  CheckSquare,
+  Square,
+  Trash2,
+  Play,
   SquareIcon,
-  Filter,
-  SortAsc,
-  Search,
   Plus
 } from 'lucide-react';
-import type { Task, TaskStatus, TaskPriority } from '@/types/task';
+import type { Task, TaskPriority } from '@/types/task';
 import { useTaskStore } from '@/stores/taskStore';
 import { sortTasks, filterTasks, getTaskProgress } from '@/utils/task';
 import TaskCard from './TaskCard';
 import Button from './ui/Button';
-import Input from './ui/Input';
-import Select from './ui/Select';
 import Badge from './ui/Badge';
 
 const TaskList: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const {
     tasks,
-    projects,
     selectedTasks,
     currentFilter,
     isLoading,
     error,
-    isTaskFormOpen,
-    editingTask,
     toggleTaskSelection,
     selectAllTasks,
     clearSelection,
-    setFilter,
     completeTask,
     uncompleteTask,
     deleteTask,
@@ -47,35 +35,26 @@ const TaskList: React.FC = () => {
     batchStart,
     batchStop,
     openTaskForm,
-    closeTaskForm,
   } = useTaskStore();
-  
-  // Get search from URL params or use local state
-  const urlSearch = searchParams.get('search');
-  const [searchTerm, setSearchTerm] = React.useState(urlSearch || '');
-  const [sortBy, setSortBy] = React.useState<'urgency' | 'due' | 'created' | 'modified'>('urgency');
-  const [localFilters, setLocalFilters] = React.useState({
-    tags: [] as string[],
-  });
 
-  // Update search term when URL params change
-  React.useEffect(() => {
-    if (urlSearch !== null) {
-      setSearchTerm(urlSearch);
-    }
-  }, [urlSearch]);
-
+  const { sortBy, search } = currentFilter;
   // Apply local filtering and sorting
   const filteredAndSortedTasks = React.useMemo(() => {
     let filtered = filterTasks(tasks, {
-      search: searchTerm,
+      search,
       project: currentFilter.project === 'all' ? undefined : currentFilter.project,
       priority: currentFilter.priority === 'all' ? undefined : currentFilter.priority === 'none' ? 'none' : currentFilter.priority as TaskPriority,
-      tags: localFilters.tags.length > 0 ? localFilters.tags : undefined,
+      tags: [],
     });
 
     return sortTasks(filtered, sortBy);
-  }, [tasks, searchTerm, currentFilter.project, currentFilter.priority, localFilters, sortBy]);
+  }, [
+    tasks,
+    search,
+    currentFilter.project,
+    currentFilter.priority,
+    sortBy
+  ]);
 
   const progress = getTaskProgress(filteredAndSortedTasks);
   const selectedTaskIds = Array.from(selectedTasks);
@@ -111,9 +90,9 @@ const TaskList: React.FC = () => {
     }
   };
 
-  const allSelected = filteredAndSortedTasks.length > 0 && 
+  const allSelected = filteredAndSortedTasks.length > 0 &&
     filteredAndSortedTasks.every(task => task.id && selectedTasks.has(task.id));
-    
+
   const handleSelectAll = () => {
     if (allSelected) {
       clearSelection();
@@ -145,83 +124,6 @@ const TaskList: React.FC = () => {
           <Plus className="w-4 h-4 mr-2" />
           Add Task
         </Button>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg border space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="md:col-span-2">
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          {/* Status Filter */}
-          <Select
-            value={currentFilter.status}
-            onChange={(e) => setFilter({ status: e.target.value as TaskStatus | 'all' })}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
-            <option value="waiting">Waiting</option>
-            <option value="deleted">Deleted</option>
-          </Select>
-
-          {/* Sort */}
-          <Select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
-            <option value="urgency">Sort by Urgency</option>
-            <option value="due">Sort by Due Date</option>
-            <option value="created">Sort by Created</option>
-            <option value="modified">Sort by Modified</option>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Project Filter */}
-          <Select
-            value={currentFilter.project}
-            onChange={(e) => setFilter({ project: e.target.value })}
-          >
-            <option value="all">All Projects</option>
-            {projects.map((project) => (
-              <option key={project} value={project}>
-                {project}
-              </option>
-            ))}
-          </Select>
-
-          {/* Priority Filter */}
-          <Select
-            value={currentFilter.priority}
-            onChange={(e) => setFilter({ 
-              priority: e.target.value as 'H' | 'M' | 'L' | 'none' | 'all'
-            })}
-          >
-            <option value="all">All Priorities</option>
-            <option value="H">High Priority</option>
-            <option value="M">Medium Priority</option>
-            <option value="L">Low Priority</option>
-            <option value="none">No Priority</option>
-          </Select>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilter({ status: 'all', project: 'all', priority: 'all' });
-                setLocalFilters({ tags: [] });
-              }}
-              className="text-sm text-secondary-500 hover:text-secondary-700"
-            >
-              Clear Filters
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Batch Actions */}
@@ -328,7 +230,7 @@ const TaskList: React.FC = () => {
               // Generate a unique key for each task
               // Prefer uuid, then id (if not 0), then fallback to index
               const taskKey = task.uuid || (task.id && task.id !== 0 ? `id-${task.id}` : `index-${index}`);
-              
+
               return (
                 <TaskCard
                   key={taskKey}
@@ -353,7 +255,7 @@ const TaskList: React.FC = () => {
                 No tasks found
               </h3>
               <p className="text-secondary-500 mb-4">
-                {tasks.length > 0 
+                {tasks.length > 0
                   ? 'Try adjusting your search or filter criteria.'
                   : 'Get started by creating your first task.'
                 }

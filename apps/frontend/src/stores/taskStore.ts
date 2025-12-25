@@ -10,22 +10,23 @@ interface TaskState {
   projects: string[];
   tags: string[];
   summary: TaskSummary | null;
-  
+
   // UI State
   isLoading: boolean;
   error: string | null;
   selectedTasks: Set<number>;
   currentFilter: {
+    sortBy: 'urgency' | 'due' | 'created' | 'modified';
     status: TaskStatus | 'all';
     project: string | 'all';
     priority: 'H' | 'M' | 'L' | 'none' | 'all';
     search: string;
   };
-  
+
   // Form State
   isTaskFormOpen: boolean;
   editingTask: Task | null;
-  
+
   // Actions
   loadTasks: () => Promise<void>;
   loadMetadata: () => Promise<void>;
@@ -41,26 +42,26 @@ interface TaskState {
   deleteTask: (taskId: number) => Promise<void>;
   startTask: (taskId: number) => Promise<void>;
   stopTask: (taskId: number) => Promise<void>;
-  
+
   // Batch operations
   batchComplete: (taskIds: number[]) => Promise<void>;
   batchUncomplete: (taskIds: number[]) => Promise<void>;
   batchDelete: (taskIds: number[]) => Promise<void>;
   batchStart: (taskIds: number[]) => Promise<void>;
   batchStop: (taskIds: number[]) => Promise<void>;
-  
+
   // Selection
   toggleTaskSelection: (taskId: number) => void;
   selectAllTasks: (taskIds?: number[]) => void;
   clearSelection: () => void;
-  
+
   // Filtering
   setFilter: (filter: Partial<TaskState['currentFilter']>) => void;
-  
+
   // Form Management
   openTaskForm: (task?: Task) => void;
   closeTaskForm: () => void;
-  
+
   // Utilities
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
@@ -78,6 +79,7 @@ export const useTaskStore = create<TaskState>()(
       error: null,
       selectedTasks: new Set(),
       currentFilter: {
+        sortBy: 'urgency',
         status: 'all' as const,
         project: 'all',
         priority: 'all',
@@ -98,7 +100,7 @@ export const useTaskStore = create<TaskState>()(
 
           if (response.success) {
             let tasks = response.tasks;
-            
+
             // For tasks without valid IDs (like completed tasks), use UUID-based IDs
             tasks = tasks.map(task => {
               if (!task.id || task.id === 0) {
@@ -115,7 +117,7 @@ export const useTaskStore = create<TaskState>()(
               }
               return task;
             });
-            
+
             // Check for duplicate or missing IDs in development
             if (process.env.NODE_ENV === 'development') {
               const idCounts = new Map<any, number>();
@@ -126,14 +128,14 @@ export const useTaskStore = create<TaskState>()(
                   console.warn(`Task at index ${index} has no ID, UUID:`, task.uuid);
                 }
               });
-              
+
               idCounts.forEach((count, id) => {
                 if (count > 1 && id !== 'undefined') {
                   console.error(`Duplicate task ID found: ${id} appears ${count} times`);
                 }
               });
             }
-            
+
             // Filter by priority on client side
             if (currentFilter.priority !== 'all') {
               if (currentFilter.priority === 'none') {
@@ -142,17 +144,17 @@ export const useTaskStore = create<TaskState>()(
                 tasks = tasks.filter(t => t.priority === currentFilter.priority);
               }
             }
-            
+
             // Filter by search term if present
             if (currentFilter.search) {
               const searchLower = currentFilter.search.toLowerCase();
-              tasks = tasks.filter(t => 
+              tasks = tasks.filter(t =>
                 t.description.toLowerCase().includes(searchLower) ||
                 t.project?.toLowerCase().includes(searchLower) ||
                 t.tags.some(tag => tag.toLowerCase().includes(searchLower))
               );
             }
-            
+
             set({ tasks, isLoading: false });
           } else {
             set({ error: response.error || 'Failed to load tasks', isLoading: false });
@@ -245,7 +247,7 @@ export const useTaskStore = create<TaskState>()(
           // Find the task to get its UUID
           const task = get().tasks.find(t => t.id === taskId);
           const uuid = task?.uuid;
-          
+
           const response = await taskWarriorAPI.uncompleteTask(taskId, uuid);
           if (response.success) {
             await get().loadTasks();
@@ -331,7 +333,7 @@ export const useTaskStore = create<TaskState>()(
               taskUuids[id] = task.uuid;
             }
           });
-          
+
           const response = await taskWarriorAPI.batchUncompleteByIds(taskIds, taskUuids);
           if (response.success) {
             await get().loadTasks();
@@ -390,7 +392,7 @@ export const useTaskStore = create<TaskState>()(
       // Selection management
       toggleTaskSelection: (taskId) => {
         if (!taskId) return;
-        
+
         set((state) => {
           const newSelection = new Set(state.selectedTasks);
           if (newSelection.has(taskId)) {
@@ -441,7 +443,7 @@ export const useTaskStore = create<TaskState>()(
         }
         set({ isTaskFormOpen: true, editingTask: task || null });
       },
-      
+
       closeTaskForm: () => {
         set({ isTaskFormOpen: false, editingTask: null });
       },
