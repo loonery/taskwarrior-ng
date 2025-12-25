@@ -1,7 +1,7 @@
 // SearchFilterSort.tsx
 import React, { useEffect } from 'react';
-import Select from '../ui/Select';
-import Input from '../ui/Input';
+import Select from './ui/Select';
+import Input from './ui/Input';
 import { useSearchParams } from 'react-router-dom';
 import { TaskStatus } from '@/types/task';
 import { useTaskStore } from '@/stores/taskStore';
