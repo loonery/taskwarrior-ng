@@ -5,16 +5,19 @@ import Button from './ui/Button';
 import {
   Plus,
 } from 'lucide-react';
+import { useTaskStore } from '@/stores/taskStore';
 
 interface TaskListHeaderProps {
   progress: TaskProgress
-  openTaskForm: (task?: Task) => void
 }
+
 
 export const TaskListHeader = ({
   progress,
-  openTaskForm
 }: TaskListHeaderProps) => {
+  const {
+    openTaskForm
+  } = useTaskStore();
   return (
     <div className="flex items-center justify-between">
       <div>

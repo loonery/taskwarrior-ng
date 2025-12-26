@@ -1,4 +1,5 @@
 import { Task } from "@/types/task";
+import { useTaskStore } from '@/stores/taskStore';
 import {
   Square,
   Trash2,
@@ -13,40 +14,86 @@ import TaskCard from './TaskCard';
 import { Fragment } from "react/jsx-runtime";
 
 interface TaskListRowsProps {
+  selectedTasks: Set<number>;
   tasks: Task[];
   filteredAndSortedTasks: Task[];
 };
 
-const handleBatchAction = async (action: 'complete' | 'uncomplete' | 'delete' | 'start' | 'stop') => {
-  if (!hasSelection) return;
-
-  try {
-    switch (action) {
-      case 'complete':
-        await batchComplete(selectedTaskIds);
-        break;
-      case 'uncomplete':
-        await batchUncomplete(selectedTaskIds);
-        break;
-      case 'delete':
-        await batchDelete(selectedTaskIds);
-        break;
-      case 'start':
-        await batchStart(selectedTaskIds);
-        break;
-      case 'stop':
-        await batchStop(selectedTaskIds);
-        break;
-    }
-  } catch (error) {
-    console.error(`Failed to ${action} tasks:`, error);
-  }
-};
 
 export const TaskListRows = ({
+  selectedTasks,
   tasks,
-  filteredAndSortedTasks
+  filteredAndSortedTasks,
 }: TaskListRowsProps) => {
+
+  const {
+    isLoading,
+    error,
+    toggleTaskSelection,
+    selectAllTasks,
+    clearSelection,
+    completeTask,
+    uncompleteTask,
+    deleteTask,
+    startTask,
+    stopTask,
+    batchComplete,
+    batchUncomplete,
+    batchDelete,
+    batchStart,
+    batchStop,
+    openTaskForm,
+  } = useTaskStore();
+
+  const handleEditTask = (task: Task) => {
+    openTaskForm(task);
+  };
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      clearSelection();
+    } else {
+      // Pass the filtered task IDs to selectAllTasks
+      const visibleTaskIds = filteredAndSortedTasks
+        .map(task => task.id)
+        .filter(id => id !== undefined && id !== null) as number[];
+      selectAllTasks(visibleTaskIds);
+    }
+  }
+
+  const selectedTaskIds = Array.from(selectedTasks);
+  const hasSelection = selectedTaskIds.length > 0;
+
+  const allSelected = filteredAndSortedTasks.length > 0 &&
+    filteredAndSortedTasks.every(task => task.id && selectedTasks.has(task.id));
+  ;
+
+  const handleBatchAction = async (action: 'complete' | 'uncomplete' | 'delete' | 'start' | 'stop') => {
+    if (!hasSelection) return;
+
+    try {
+      switch (action) {
+        case 'complete':
+          await batchComplete(selectedTaskIds);
+          break;
+        case 'uncomplete':
+          await batchUncomplete(selectedTaskIds);
+          break;
+        case 'delete':
+          await batchDelete(selectedTaskIds);
+          break;
+        case 'start':
+          await batchStart(selectedTaskIds);
+          break;
+        case 'stop':
+          await batchStop(selectedTaskIds);
+          break;
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} tasks:`, error);
+    }
+  };
+
   return (
     <Fragment>
       {/* Batch Actions */}
